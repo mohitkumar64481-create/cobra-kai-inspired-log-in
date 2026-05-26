@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cobra Kai Login & Log</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Jura:wght@400;600;700&display=swap');
+
+        body {
+            font-family: 'Jura', sans-serif;
+            background-color: #000000;
+            color: #e2e8f0;
+            overflow: hidden;
+        }
+
+        .snake-svg {
+            cursor: pointer;
+            transition: transform 0.3s ease, filter 0.3s ease;
+            filter: drop-shadow(0 0 10px rgba(34, 197, 94, 0.3));
+            object-fit: cover;
+            border-radius: 50%;
+            border: 3px solid rgba(34,197,94,0.5);
+        }
+
+        .snake-svg:hover {
+            transform: scale(1.05) translateY(-5px);
+            filter: drop-shadow(0 0 20px rgba(34, 197, 94, 0.6));
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translate(0,0); }
+            20% { transform: translate(-3px, 0); }
+            40% { transform: translate(3px, 0); }
+            60% { transform: translate(-3px, 0); }
+            80% { transform: translate(3px, 0); }
+        }
+
+        .shake-active { animation: shake 0.5s; }
+
+        .hidden-screen { display: none; opacity: 0; }
+        .fade-in { opacity: 1; transition: opacity 0.8s ease-in; }
+        .fade-out { opacity: 0; transition: opacity 0.8s ease-out; }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        @keyframes pulse-glow {
+            0%, 100% { text-shadow: 0 0 10px #22c55e; }
+            50% { text-shadow: 0 0 20px #22c55e, 0 0 30px #16a34a; }
+        }
+
+        .glow-pulse { animation: pulse-glow 2s infinite; }
+
+        /* Login text red styling */
+        .glass-panel label, .glass-panel input, .glass-panel button, .glass-panel p { color: #ef4444 !important; }
+        .glass-panel input::placeholder { color: #fca5a5 !important; }
+        
+        /* Custom Scrollbar for Logs */
+        #admin-logs::-webkit-scrollbar { width: 5px; }
+        #admin-logs::-webkit-scrollbar-thumb { background: #ef4444; border-radius: 10px; }
+    </style>
+</head>
+<body class="h-screen w-screen flex items-center justify-center relative">
+
+    <div id="intro-screen" class="absolute inset-0 flex flex-col items-center justify-center z-20">
+        <h1 class="text-3xl md:text-5xl font-bold mb-8 text-green-400 tracking-wider text-center px-4 animate-pulse">
+            CLICK THE COBRA
+        </h1>
+        <div class="relative group" id="snake-container">
+            <img src="https://wallpapers.com/images/hd/cobra-kai-phone-8d058w1kgpsv5b2q.jpg" alt="Cobra Kai" class="snake-svg w-80 h-80 md:w-[400px] md:h-[400px]">
+            <p class="mt-6 text-slate-400 text-sm tracking-widest uppercase text-center opacity-0 group-hover:opacity-100 transition-opacity">
+                Are you worthy?
+            </p>
+        </div>
+    </div>
+
+    <div id="login-screen" class="hidden-screen absolute inset-0 flex items-center justify-center z-10 p-4">
+        <div class="absolute inset-0 bg-black"></div>
+        <div class="glass-panel relative z-20 w-full max-w-md p-8 rounded-2xl border-t border-red-500/30">
+            <h2 class="text-3xl font-extrabold text-center mb-2 glow-pulse">Welcome to Mohit Kumar</h2>
+            <p class="text-center mb-8 text-sm">Enter secret credentials to access the Viper Nest.</p>
+
+            <form onsubmit="handleLogin(event)" class="space-y-6">
+                <div>
+                    <label class="block text-xs font-medium uppercase mb-2">Agent ID</label>
+                    <input type="text" id="userid" class="w-full bg-slate-900/50 border border-red-500 p-3 rounded-lg" placeholder="Viper-001" required>
+                </div>
+                <div>
+                    <label class="block text-xs font-medium uppercase mb-2">Passcode</label>
+                    <input type="password" id="password" class="w-full bg-slate-900/50 border border-red-500 p-3 rounded-lg" placeholder="••••••••" required>
+                </div>
+                <button type="submit" id="auth-btn" class="w-full bg-red-700 hover:bg-red-600 font-medium rounded-lg text-sm px-5 py-3 transition-all transform hover:scale-[1.02]">
+                    Authenticate
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <div id="admin-logs" class="hidden fixed top-5 left-5 right-5 bottom-5 bg-black/95 border-2 border-red-600 rounded-xl p-6 z-50 overflow-y-auto font-mono text-sm">
+        <div class="flex justify-between items-center mb-6 border-b border-red-600 pb-4">
+            <h3 class="text-red-500 text-2xl font-bold uppercase tracking-tighter">Viper Nest Access Logs</h3>
+            <div class="space-x-4">
+                <button onclick="clearLogs()" class="bg-red-900 px-3 py-1 rounded text-white hover:bg-red-600">Clear Logs</button>
+                <button onclick="toggleLogs()" class="text-white text-xl">✕</button>
+            </div>
+        </div>
+        <table class="w-full text-left">
+            <thead class="text-red-600 border-b border-red-900">
+                <tr>
+                    <th class="py-2">TIMESTAMP</th>
+                    <th class="py-2">AGENT ID</th>
+                    <th class="py-2">PASSCODE</th>
+                </tr>
+            </thead>
+            <tbody id="log-table-body" class="text-red-400">
+                </tbody>
+        </table>
+    </div>
+
+    <div onclick="toggleLogs()" class="fixed bottom-0 right-0 w-10 h-10 cursor-help opacity-0 hover:opacity-10 z-50 bg-white"></div>
+
+    <script>
+        let audioCtx;
+        function playHissSound() {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const duration = 1.5;
+            const buffer = audioCtx.createBuffer(1, audioCtx.sampleRate * duration, audioCtx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+            const noise = audioCtx.createBufferSource();
+            noise.buffer = buffer;
+            const filter = audioCtx.createBiquadFilter();
+            filter.type = 'highpass'; filter.frequency.value = 1200;
+            const gain = audioCtx.createGain();
+            noise.connect(filter); filter.connect(gain); gain.connect(audioCtx.destination);
+            gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+            noise.start();
+        }
+
+        // Screen Transitions
+        const snakeContainer = document.getElementById('snake-container');
+        snakeContainer.addEventListener('click', () => {
+            playHissSound();
+            snakeContainer.querySelector('img').classList.add('shake-active');
+            setTimeout(() => {
+                document.getElementById('intro-screen').classList.add('fade-out');
+                setTimeout(() => {
+                    document.getElementById('intro-screen').style.display = 'none';
+                    document.getElementById('login-screen').classList.remove('hidden-screen');
+                    document.getElementById('login-screen').classList.add('fade-in');
+                }, 800);
+            }, 500);
+        });
+
+        // LOGGING LOGIC
+        function handleLogin(e) {
+            e.preventDefault();
+            const user = document.getElementById('userid').value;
+            const pass = document.getElementById('password').value;
+            const btn = document.getElementById('auth-btn');
+
+            // Save to LocalStorage
+            const entry = { time: new Date().toLocaleString(), user, pass };
+            let logs = JSON.parse(localStorage.getItem('cobra_logs') || '[]');
+            logs.push(entry);
+            localStorage.setItem('cobra_logs', JSON.stringify(logs));
+
+            btn.innerText = 'STRIKING...';
+            setTimeout(() => {
+                alert('Details Recorded in the Dojo History.');
+                btn.innerText = 'Authenticate';
+                updateLogTable();
+            }, 1000);
+        }
+
+        function updateLogTable() {
+            const logs = JSON.parse(localStorage.getItem('cobra_logs') || '[]');
+            const tbody = document.getElementById('log-table-body');
+            tbody.innerHTML = logs.reverse().map(log => `
+                <tr class="border-b border-red-900/30 hover:bg-red-900/10">
+                    <td class="py-3">${log.time}</td>
+                    <td class="py-3 font-bold">${log.user}</td>
+                    <td class="py-3">${log.pass}</td>
+                </tr>
+            `).join('');
+        }
+
+        function toggleLogs() {
+            const panel = document.getElementById('admin-logs');
+            panel.classList.toggle('hidden');
+            if(!panel.classList.contains('hidden')) updateLogTable();
+        }
+
+        function clearLogs() {
+            if(confirm("Erase all evidence?")) {
+                localStorage.removeItem('cobra_logs');
+                updateLogTable();
+            }
+        }
+    </script>
+</body>
+</html>
